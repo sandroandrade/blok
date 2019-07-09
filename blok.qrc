@@ -1,0 +1,16 @@
+<RCC>
+    <qresource prefix="/resources">
+        <file>images/background.png</file>
+        <file>images/brick.png</file>
+        <file>images/ground.png</file>
+        <file>images/player0.png</file>
+        <file>images/player1.png</file>
+        <file>images/player2.png</file>
+        <file>images/player3.png</file>
+        <file>images/player4.png</file>
+        <file>images/player5.png</file>
+        <file>images/player6.png</file>
+        <file>images/player7.png</file>
+        <file>images/player8.png</file>
+    </qresource>
+</RCC>
