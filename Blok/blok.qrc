@@ -1,8 +1,5 @@
 <RCC>
     <qresource prefix="/resources">
-        <file>images/background.png</file>
-        <file>images/brick.png</file>
-        <file>images/ground.png</file>
         <file>images/player0.png</file>
         <file>images/player1.png</file>
         <file>images/player2.png</file>

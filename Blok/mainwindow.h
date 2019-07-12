@@ -17,15 +17,74 @@
  *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA .             *
  *******************************************************************************/
 
-#include <QApplication>
+#ifndef MAINWINDOW_H
+#define MAINWINDOW_H
 
-#include "mainwindow.h"
+#include <QHash>
+#include <QTimeLine>
+#include <QStateMachine>
+#include <QSharedPointer>
 
-int main(int argc, char *argv[])
+#include <QMainWindow>
+#include <QGraphicsItemAnimation>
+
+class QGraphicsScene;
+class QGraphicsRectItem;
+class QGraphicsTextItem;
+
+namespace Ui
 {
-    QApplication a(argc, argv);
-    MainWindow w;
-    w.show();
-    
-    return a.exec();
+    class MainWindow;
 }
+
+class Simulator;
+class ISkinFactory;
+class ISimulator;
+
+class MainWindow : public QMainWindow
+{
+    Q_OBJECT
+    
+public:
+    explicit MainWindow(QWidget *parent = nullptr);
+    virtual ~MainWindow();
+
+Q_SIGNALS:
+    void bodyClicked(QGraphicsItem *item);
+    void keyPressed();
+
+public Q_SLOTS:
+    void init();
+    void bannerEnter();
+    void bannerLeave();
+
+private Q_SLOTS:
+    void setBannerMessage(const QString &bannerMessage);
+    void youWon();
+    void youLost();
+
+protected:
+    bool eventFilter(QObject *obj, QEvent *event);
+
+private:
+    QSharedPointer<Ui::MainWindow> ui;
+    QGraphicsScene *_scene;
+    ISimulator *_simulator;
+
+    QGraphicsRectItem *_banner;
+    QGraphicsTextItem *_bannerMessage;
+    QTimeLine _timer;
+    QGraphicsItemAnimation _animation;
+
+    QGraphicsRectItem *_player;
+
+    QStateMachine _stateMachine;
+    QState *_initialState;
+    QState *_runningState;
+    QState *_youWonState;
+    QState *_youLostState;
+
+    ISkinFactory *_selectedSkinFactory;
+};
+
+#endif // MAINWINDOW_H

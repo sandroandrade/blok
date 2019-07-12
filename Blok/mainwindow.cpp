@@ -33,7 +33,16 @@
 
 #include "ui_mainwindow.h"
 
-#include <simulator.h>
+#include "../BlokInterfaces/icore.h"
+#include "../BlokInterfaces/iuicontroller.h"
+#include "../BlokInterfaces/iplugincontroller.h"
+#include "../BlokInterfaces/iskinfactory.h"
+#include "../BlokInterfaces/iplugin.h"
+#include "../BlokInterfaces/iblock.h"
+#include "../BlokInterfaces/iblockbuilder.h"
+#include "../BlokInterfaces/iground.h"
+#include "../BlokInterfaces/ibackground.h"
+#include "../BlokInterfaces/isimulator.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -56,13 +65,12 @@ MainWindow::MainWindow(QWidget *parent) :
     _timer.setFrameRange(0, 100);
     _animation.setTimeLine(&_timer);
 
-    _simulator = new Simulator(this);
-    connect(_simulator, SIGNAL(bodiesCreated(QList<b2Body*>)),
-                        SLOT(bodiesCreated(QList<b2Body*>)));
-    connect(_simulator, SIGNAL(bodiesUpdated(QList<b2Body*>)),
-                        SLOT(bodiesUpdated(QList<b2Body*>)));
-    connect(this, SIGNAL(bodyClicked(b2Body*)),
-            _simulator, SLOT(removeBody(b2Body*)));
+    _simulator = ICore::instance()->uiController()->selectPlugin(
+        ICore::instance()->pluginController()->loadedPlugins<ISimulator>()
+    );
+
+    connect(this, &MainWindow::bodyClicked,
+            _simulator, &ISimulator::removeBody);
 
     _initialState = new QState();
     _runningState = new QState();
@@ -102,11 +110,27 @@ MainWindow::~MainWindow()
 
 void MainWindow::init()
 {
+    _selectedSkinFactory = nullptr;
+    do {
+        _selectedSkinFactory = ICore::instance()->uiController()->selectPlugin(
+            ICore::instance()->pluginController()->loadedPlugins<ISkinFactory>()
+        );
+    } while (!_selectedSkinFactory);
+
+    IBlockBuilder *blockBuilder = nullptr;
+    do {
+        blockBuilder = ICore::instance()->uiController()->selectPlugin(
+            ICore::instance()->pluginController()->loadedPlugins<IBlockBuilder>()
+        );
+    } while (!blockBuilder);
+
+    _simulator->configure(_scene, blockBuilder, _selectedSkinFactory);
+
     _scene->clear();
     _scene->setSceneRect(-450, -250, 900, 500);
 
     // Background
-    _scene->addPixmap(QPixmap (":/resources/images/background.png"))->setPos(-500, -300);
+    _scene->addPixmap(_selectedSkinFactory->createBackground()->pixmap())->setPos(-500, -300);
 
     // Banner
     _banner = _scene->addRect(-250, -50, 500, 100);
@@ -124,7 +148,7 @@ void MainWindow::init()
     // Ground
     QGraphicsRectItem *ground = _scene->addRect(-450, -10, 900, 20);
     ground->setPos(0, 260);
-    QBrush brush(QPixmap(":/resources/images/ground.png"));
+    QBrush brush(_selectedSkinFactory->createGround()->pixmap());
     brush.setTransform(brush.transform().translate(-450, -10));
     ground->setBrush(brush);
 }
@@ -168,15 +192,7 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
             QGraphicsItem *item = ui->graphicsView->scene()->itemAt(scenePoint, QTransform());
 
             if (item)
-            {
-                foreach(b2Body *body, m_bodyRect.keys())
-                    if (m_bodyRect[body] == item && item != _player)
-                    {
-                        emit bodyClicked(body);
-                        _scene->removeItem(item);
-                        break;
-                    }
-            }
+                emit bodyClicked(item);
         }
     }
     if ((_stateMachine.configuration().contains(_initialState) ||
@@ -186,47 +202,6 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
         emit keyPressed();
 
     return QMainWindow::eventFilter(obj, event);
-}
-
-void MainWindow::bodiesUpdated(const QList<b2Body *> &bodies)
-{
-    foreach (b2Body *body, bodies)
-    {
-        const b2Vec2 &pos = body->GetPosition();
-        m_bodyRect[body]->setPos(pos.x, -pos.y);
-    }
-}
-
-void MainWindow::bodiesCreated(const QList<b2Body *> &bodies)
-{
-    m_bodyRect.clear();
-    foreach (b2Body *body, bodies)
-    {
-        const b2Vec2 &position = body->GetPosition();
-        QGraphicsRectItem *rect = 0;
-        if (body->GetUserData())
-        {
-            // Player
-            rect = _scene->addRect(-28, -28, 56, 56);
-            QPixmap pixmap(QString(":/resources/images/player%1.png").arg(qrand()%9));
-            QBrush brush(pixmap);
-            brush.setTransform(brush.transform().translate(-28, -28));
-            rect->setBrush(brush);
-            _player = rect;
-        }
-        else
-        {
-            // Block
-            rect = _scene->addRect(-14, -14, 28, 28);
-            QBrush brush(QPixmap(":/resources/images/brick.png"));
-            brush.setTransform(brush.transform().translate(-14, -14));
-            rect->setBrush(brush);
-        }
-        rect->setPos(position.x, -position.y);
-        rect->setPen(QPen(Qt::NoPen));
-
-        m_bodyRect[body] = rect;
-    }
 }
 
 void MainWindow::setBannerMessage(const QString &bannerMessage)
