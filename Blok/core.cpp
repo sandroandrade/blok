@@ -4,14 +4,13 @@
 #include "plugincontroller.h"
 
 Core::Core(QObject *parent) : ICore(parent),
-                              _pluginController(new PluginController(this)),
-                              _uiController(new UIController(this))
+    _pluginController(new PluginController(this)),
+    _uiController(new UIController(this))
 {
 }
 
 Core::~Core()
 {
-
 }
 
 bool Core::initialize()

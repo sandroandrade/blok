@@ -9,18 +9,15 @@
 
 UIController::UIController(QObject *parent)
     : IUIController(parent),
-      _mainWindow(nullptr)
+      _mainWindow(new MainWindow)
 {
 }
 
 bool UIController::initialize()
 {
-    if (!_mainWindow) {
-        _mainWindow = new MainWindow();
-        _mainWindow->show();
-        return true;
-    }
-    return false;
+    _mainWindow->initialize();
+    _mainWindow->show();
+    return true;
 }
 
 bool UIController::addMenuItem(const QString &menu, QAction *action)
@@ -45,6 +42,11 @@ bool UIController::addToolButton(const QString &objectName, QAction *action)
         _mainWindow->addToolBar(myToolBar = new QToolBar(objectName));
     myToolBar->addAction(action);
     return true;
+}
+
+bool UIController::addGraphicsItem(QGraphicsItem *graphicsItem)
+{
+    return _mainWindow->addGraphicsItem(graphicsItem);
 }
 
 

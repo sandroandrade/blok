@@ -12,6 +12,11 @@
 #include "../BlokInterfaces/iblockbuilder.h"
 #include "../BlokInterfaces/iskinfactory.h"
 #include "../BlokInterfaces/iblock.h"
+#include "../BlokInterfaces/icore.h"
+#include "../BlokInterfaces/iplugincontroller.h"
+#include "../BlokInterfaces/iblokdecorator.h"
+
+#include "player.h"
 
 static const float32 B2_TIMESTEP = 1.0f / 30.0f;    // krazy:exclude=staticobjects
 static const int32 B2_VELOCITY_ITERATIONS = 8;      // krazy:exclude=staticobjects
@@ -62,17 +67,20 @@ void Box2DSimulatorPlugin::init()
     }
 
     // Player
-    rect = _scene->addRect(-28, -28, 56, 56);
-    QBrush brush(QPixmap(QString(":/resources/images/player%1.png").arg(qrand()%9)));
-    brush.setTransform(brush.transform().translate(-28, -28));
-    rect->setBrush(brush);
-    rect->setPen(QPen(Qt::NoPen));
-    _player = rect;
+    IBlokComponent *component = new Player;
+    for (auto decorator :
+        ICore::instance()->pluginController()->loadedPlugins<IBlokDecorator>())
+    {
+        decorator->setDecorated(component);
+        component = decorator;
+    }
+    _player = component->createPlayer();
+    _scene->addItem(_player);
 
     b2Body *playerBody = createBody(_world, 0, 100, 56.0f, 56.0f);
-    rect->setPos(0, -100);
+    _player->setPos(0, -100);
     playerBody->SetUserData(&_playerString);
-    m_itemBodyHash[rect] = playerBody;
+    m_itemBodyHash[_player] = playerBody;
 }
 
 void Box2DSimulatorPlugin::start()
@@ -92,9 +100,12 @@ void Box2DSimulatorPlugin::removeBody(QGraphicsItem *body)
     b2Body *clickedBody = m_itemBodyHash.value(body);
     if (!clickedBody || clickedBody->GetUserData())
         return;
+
     _world->DestroyBody(clickedBody);
     m_itemBodyHash.remove(body);
     _scene->removeItem(body);
+    emit blockRemoved();
+
     if (m_itemBodyHash.size() == 2)
     {
         stop();

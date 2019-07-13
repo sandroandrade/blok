@@ -56,6 +56,8 @@ MainWindow::MainWindow(QWidget *parent) :
     _scene = new QGraphicsScene;
     _scene->setItemIndexMethod(QGraphicsScene::NoIndex);
 
+    setMenuBar(new QMenuBar);
+
     ui->graphicsView->setScene(_scene);
     ui->graphicsView->setRenderHint(QPainter::Antialiasing);
     ui->graphicsView->setMaximumSize(1000, 600);
@@ -65,20 +67,40 @@ MainWindow::MainWindow(QWidget *parent) :
     _timer.setFrameRange(0, 100);
     _animation.setTimeLine(&_timer);
 
+    _initialState = new QState();
+    _runningState = new QState();
+    _youWonState  = new QState();
+    _youLostState = new QState();
+
+    _stateMachine.addState(_initialState);
+    _stateMachine.addState(_runningState);
+    _stateMachine.addState(_youWonState);
+    _stateMachine.addState(_youLostState);
+    _stateMachine.setInitialState(_initialState);
+}
+
+MainWindow::~MainWindow()
+{
+}
+
+bool MainWindow::initialize()
+{
     _simulator = ICore::instance()->uiController()->selectPlugin(
         ICore::instance()->pluginController()->loadedPlugins<ISimulator>()
     );
 
     connect(this, &MainWindow::bodyClicked,
             _simulator, &ISimulator::removeBody);
-
-    _initialState = new QState();
-    _runningState = new QState();
-    _youWonState  = new QState();
-    _youLostState = new QState();
+    connect(_simulator, &ISimulator::blockRemoved,
+            ICore::instance()->uiController(),
+            &IUIController::blockRemoved);
 
     connect(_initialState, SIGNAL(entered()), this, SLOT(init()));
     connect(_initialState, SIGNAL(entered()), _simulator, SLOT(init()));
+
+    connect(this, &MainWindow::sceneInitialized,
+            ICore::instance()->uiController(), &IUIController::init);
+
     connect(_initialState, SIGNAL(entered()), this, SLOT(bannerEnter()));
     connect(_initialState, SIGNAL(exited()), this, SLOT(bannerLeave()));
     _initialState->addTransition(this, SIGNAL(keyPressed()), _runningState);
@@ -95,17 +117,14 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(_youLostState, SIGNAL(entered()), this, SLOT(youLost()));
     _youLostState->addTransition(this, SIGNAL(keyPressed()), _initialState);
 
-    _stateMachine.addState(_initialState);
-    _stateMachine.addState(_runningState);
-    _stateMachine.addState(_youWonState);
-    _stateMachine.addState(_youLostState);
-    _stateMachine.setInitialState(_initialState);
-
     _stateMachine.start();
+    return true;
 }
 
-MainWindow::~MainWindow()
+bool MainWindow::addGraphicsItem(QGraphicsItem *graphicsItem)
 {
+    _scene->addItem(graphicsItem);
+    return true;
 }
 
 void MainWindow::init()
@@ -151,6 +170,8 @@ void MainWindow::init()
     QBrush brush(_selectedSkinFactory->createGround()->pixmap());
     brush.setTransform(brush.transform().translate(-450, -10));
     ground->setBrush(brush);
+
+    emit sceneInitialized();
 }
 
 void MainWindow::bannerEnter()

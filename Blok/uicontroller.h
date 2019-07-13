@@ -15,9 +15,10 @@ public:
     bool initialize();
     bool addMenuItem(const QString &menu, QAction *action);
     bool addToolButton(const QString &objectName, QAction *action);
+    bool addGraphicsItem(QGraphicsItem *graphicsItem);
 
 private:
-    MainWindow *_mainWindow;
+    MainWindow *_mainWindow;    
 };
 
 #endif // UICONTROLLER_H

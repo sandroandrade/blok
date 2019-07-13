@@ -24,6 +24,7 @@ public:
 Q_SIGNALS:
     void youWon();
     void youLost();
+    void blockRemoved();
 
 public Q_SLOTS:
     virtual void init() = 0;

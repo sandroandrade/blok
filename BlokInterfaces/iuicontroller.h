@@ -10,6 +10,7 @@
 #include <QGridLayout>
 
 class QAction;
+class QGraphicsItem;
 
 class BLOKINTERFACESSHARED_EXPORT IUIController : public QObject
 {
@@ -19,6 +20,7 @@ public:
     virtual bool initialize() = 0;
     virtual bool addMenuItem(const QString &menu, QAction *action) = 0;
     virtual bool addToolButton(const QString &objectName, QAction *action) = 0;
+    virtual bool addGraphicsItem(QGraphicsItem *graphicsItem) = 0;
     template <typename T>
     T *selectPlugin(const QHash<QString, T *> &plugins) {
         bool ok;
@@ -29,9 +31,10 @@ public:
                                  0, false, &ok);
         return (ok) ? plugins[selectedPlugin]:nullptr;
     }
-signals:
 
-public slots:
+Q_SIGNALS:
+    void init();
+    void blockRemoved();
 };
 
 #endif // IUICONTROLLER_H

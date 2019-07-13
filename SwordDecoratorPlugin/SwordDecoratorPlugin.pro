@@ -1,15 +1,18 @@
 #-------------------------------------------------
 #
-# Project created by QtCreator 2019-07-08T16:21:19
+# Project created by QtCreator 2019-07-12T16:48:06
 #
 #-------------------------------------------------
 
 QT       += widgets
 
-TARGET = BlokInterfaces
+TARGET = SwordDecoratorPlugin
 TEMPLATE = lib
 
-DEFINES += BLOKINTERFACES_LIBRARY
+CONFIG += plugin
+DESTDIR = ../Blok/plugins/
+
+DEFINES += SWORDDECORATORPLUGIN_LIBRARY
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which has been marked as deprecated (the exact warnings
@@ -23,35 +26,16 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-        ibackground.cpp \
-        iblock.cpp \
-        iblockbuilder.cpp \
-        iblokcomponent.cpp \
-        iblokdecorator.cpp \
-        icore.cpp \
-        iground.cpp \
-        iplugin.cpp \
-        iplugincontroller.cpp \
-        isimulator.cpp \
-        iskinfactory.cpp \
-        iuicontroller.cpp
+        sworddecoratorplugin.cpp
 
 HEADERS += \
-        ibackground.h \
-        iblock.h \
-        iblockbuilder.h \
-        iblokcomponent.h \
-        iblokdecorator.h \
-        icore.h \
-        blokinterfaces_global.h  \
-        iground.h \
-        iplugin.h \
-        iplugincontroller.h \
-        isimulator.h \
-        iskinfactory.h \
-        iuicontroller.h
+        sworddecoratorplugin.h \
+        sworddecoratorplugin_global.h 
 
 unix {
     target.path = /usr/lib
     INSTALLS += target
 }
+
+RESOURCES += \
+    blok.qrc

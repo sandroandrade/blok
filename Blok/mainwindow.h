@@ -49,9 +49,14 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     virtual ~MainWindow();
 
+    bool initialize();
+
+    bool addGraphicsItem(QGraphicsItem *graphicsItem);
+
 Q_SIGNALS:
     void bodyClicked(QGraphicsItem *item);
     void keyPressed();
+    void sceneInitialized();
 
 public Q_SLOTS:
     void init();
