@@ -31,6 +31,7 @@
 class QGraphicsScene;
 class QGraphicsRectItem;
 class QGraphicsTextItem;
+class QUndoStack;
 
 namespace Ui
 {
@@ -54,7 +55,7 @@ public:
     bool addGraphicsItem(QGraphicsItem *graphicsItem);
 
 Q_SIGNALS:
-    void bodyClicked(QGraphicsItem *item);
+    void bodyClicked(QGraphicsItem *item, bool notify = true);
     void keyPressed();
     void sceneInitialized();
 
@@ -90,6 +91,7 @@ private:
     QState *_youLostState;
 
     ISkinFactory *_selectedSkinFactory;
+    QUndoStack *_undoStack;
 };
 
 #endif // MAINWINDOW_H

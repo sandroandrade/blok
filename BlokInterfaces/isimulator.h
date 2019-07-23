@@ -4,6 +4,7 @@
 #include "blokinterfaces_global.h"
 
 #include <QObject>
+#include <QPointF>
 
 class QGraphicsScene;
 class IBlockBuilder;
@@ -24,13 +25,18 @@ public:
 Q_SIGNALS:
     void youWon();
     void youLost();
-    void blockRemoved();
+    void blockRemoved(QPointF removedBlockPosition,
+                      const QList<QPointF> &blockPositions,
+                      const QPointF &playerPosition);
 
 public Q_SLOTS:
+    virtual void removeAllBodies(bool notify = true) = 0;
+    virtual void recreate(QList<QPointF> allBlocksPosition,
+                          QPointF playerPosition) = 0;
     virtual void init() = 0;
     virtual void start() = 0;
     virtual void stop() = 0;
-    virtual void removeBody(QGraphicsItem *body) = 0;
+    virtual void removeBody(QGraphicsItem *body, bool notify = true) = 0;
 
 protected:
     QGraphicsScene *_scene;

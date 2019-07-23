@@ -24,15 +24,20 @@ public:
     bool initialize();
 
 public Q_SLOTS:
+    void removeAllBodies(bool notify = true);
+    void recreate(QList<QPointF> allBlocksPosition,
+                  QPointF playerPosition);
     void init();
     void start();
     void stop();
-    void removeBody(QGraphicsItem *body);
+    void removeBody(QGraphicsItem *body, bool notify = true);
 
 protected:
     void timerEvent(QTimerEvent *event);
 
 private:
+    void createBlocks(const QList<QPointF> &blocksPositions);
+    void createPlayer(const QPointF &playerPosition);
     b2Body *createBody(b2World *world, float32 x, float32 y, float32 width,
                        float32 height, bool dynamic = true, float32 density = 1.0f,
                        float32 friction = 0.3f, float32 restitution = 0.5f);

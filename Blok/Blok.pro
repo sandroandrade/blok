@@ -27,6 +27,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 CONFIG += c++11
 
 SOURCES += \
+        blokremovalcommand.cpp \
         core.cpp \
         main.cpp \
         mainwindow.cpp \
@@ -34,6 +35,7 @@ SOURCES += \
         uicontroller.cpp
 
 HEADERS += \
+    blokremovalcommand.h \
     core.h \
     mainwindow.h \
     plugincontroller.h \

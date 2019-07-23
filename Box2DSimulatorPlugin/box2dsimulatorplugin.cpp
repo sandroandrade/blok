@@ -41,6 +41,18 @@ bool Box2DSimulatorPlugin::initialize()
     return true;
 }
 
+void Box2DSimulatorPlugin::removeAllBodies(bool notify)
+{
+    for (auto graphicsItem : m_itemBodyHash.keys())
+        removeBody(graphicsItem, notify);
+}
+
+void Box2DSimulatorPlugin::recreate(QList<QPointF> allBlocksPosition, QPointF playerPosition)
+{
+    createBlocks(allBlocksPosition);
+    createPlayer(playerPosition);
+}
+
 void Box2DSimulatorPlugin::init()
 {
     delete _world;
@@ -51,36 +63,11 @@ void Box2DSimulatorPlugin::init()
     // Ground
     _ground = createBody(_world, 0.0f, -260.0f, 900.0f, 20.0f, false);
 
-    QGraphicsRectItem *rect = nullptr;
-
     // Blocks
-    for (auto point : _blockBuilder->buildBlocks()) {
-        b2Body *body = createBody(_world, point.x(), point.y(), 28.0f, 28.0f);
-        const b2Vec2 &position = body->GetPosition();
-        rect = _scene->addRect(-14, -14, 28, 28);
-        QBrush brush(_skinFactory->createBlock()->pixmap());
-        brush.setTransform(brush.transform().translate(-14, -14));
-        rect->setBrush(brush);
-        rect->setPos(static_cast<qreal>(position.x), static_cast<qreal>(-position.y));
-        rect->setPen(QPen(Qt::NoPen));
-        m_itemBodyHash[rect] = body;
-    }
+    createBlocks(_blockBuilder->buildBlocks());
 
     // Player
-    IBlokComponent *component = new Player;
-    for (auto decorator :
-        ICore::instance()->pluginController()->loadedPlugins<IBlokDecorator>())
-    {
-        decorator->setDecorated(component);
-        component = decorator;
-    }
-    _player = component->createPlayer();
-    _scene->addItem(_player);
-
-    b2Body *playerBody = createBody(_world, 0, 100, 56.0f, 56.0f);
-    _player->setPos(0, -100);
-    playerBody->SetUserData(&_playerString);
-    m_itemBodyHash[_player] = playerBody;
+    createPlayer(QPointF(0, 100));
 }
 
 void Box2DSimulatorPlugin::start()
@@ -95,18 +82,32 @@ void Box2DSimulatorPlugin::stop()
     _timerId = 0;
 }
 
-void Box2DSimulatorPlugin::removeBody(QGraphicsItem *body)
+void Box2DSimulatorPlugin::removeBody(QGraphicsItem *body, bool notify)
 {
+    QPointF pos(body->pos());
     b2Body *clickedBody = m_itemBodyHash.value(body);
-    if (!clickedBody || clickedBody->GetUserData())
+    if (!clickedBody || (notify && clickedBody->GetUserData()))
         return;
+
+    QList<QPointF> blockPositions;
+    for (auto item : m_itemBodyHash.keys())
+        if (item != _player) {
+            b2Vec2 bodyPosition = m_itemBodyHash[item]->GetPosition();
+            blockPositions << QPointF(bodyPosition.x, bodyPosition.y);
+        }
 
     _world->DestroyBody(clickedBody);
     m_itemBodyHash.remove(body);
     _scene->removeItem(body);
-    emit blockRemoved();
 
-    if (m_itemBodyHash.size() == 2)
+    if (notify) {
+        b2Vec2 bodyPosition = m_itemBodyHash[_player]->GetPosition();
+        emit blockRemoved(pos,
+                          blockPositions,
+                          QPointF(bodyPosition.x, bodyPosition.y));
+    }
+
+    if (notify && m_itemBodyHash.size() == 2)
     {
         stop();
         emit youWon();
@@ -125,6 +126,40 @@ void Box2DSimulatorPlugin::timerEvent(QTimerEvent *event)
         }
     }
     QObject::timerEvent(event);
+}
+
+void Box2DSimulatorPlugin::createBlocks(const QList<QPointF> &blocksPositions)
+{
+    QGraphicsRectItem *rect = nullptr;
+    for (auto point : blocksPositions) {
+        b2Body *body = createBody(_world, point.x(), point.y(), 28.0f, 28.0f);
+        const b2Vec2 &position = body->GetPosition();
+        rect = _scene->addRect(-14, -14, 28, 28);
+        QBrush brush(_skinFactory->createBlock()->pixmap());
+        brush.setTransform(brush.transform().translate(-14, -14));
+        rect->setBrush(brush);
+        rect->setPos(static_cast<qreal>(position.x), static_cast<qreal>(-position.y));
+        rect->setPen(QPen(Qt::NoPen));
+        m_itemBodyHash[rect] = body;
+    }
+}
+
+void Box2DSimulatorPlugin::createPlayer(const QPointF &playerPosition)
+{
+    IBlokComponent *component = new Player;
+    for (auto decorator :
+        ICore::instance()->pluginController()->loadedPlugins<IBlokDecorator>())
+    {
+        decorator->setDecorated(component);
+        component = decorator;
+    }
+    _player = component->createPlayer();
+    _scene->addItem(_player);
+
+    b2Body *playerBody = createBody(_world, playerPosition.x(), playerPosition.y(), 56.0f, 56.0f);
+    _player->setPos(playerPosition.x(), -playerPosition.y());
+    playerBody->SetUserData(&_playerString);
+    m_itemBodyHash[_player] = playerBody;
 }
 
 b2Body *Box2DSimulatorPlugin::createBody(b2World *world, float32 x, float32 y, float32 width, float32 height, bool dynamic, float32 density, float32 friction, float32 restitution)

@@ -26,6 +26,7 @@
 #include <QMouseEvent>
 #include <QGraphicsPixmapItem>
 #include <QGraphicsItemAnimation>
+#include <QUndoStack>
 
 #include <Box2D/Dynamics/b2Body.h>
 
@@ -44,10 +45,13 @@
 #include "../BlokInterfaces/ibackground.h"
 #include "../BlokInterfaces/isimulator.h"
 
+#include "blokremovalcommand.h"
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
-    _timer(500)
+    _timer(500),
+    _undoStack(new QUndoStack(this))
 {
     qsrand(1);
     ui->setupUi(this);
@@ -58,6 +62,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     setMenuBar(new QMenuBar);
 
+    ui->undoView->setStack(_undoStack);
     ui->graphicsView->setScene(_scene);
     ui->graphicsView->setRenderHint(QPainter::Antialiasing);
     ui->graphicsView->setMaximumSize(1000, 600);
@@ -89,6 +94,22 @@ bool MainWindow::initialize()
         ICore::instance()->pluginController()->loadedPlugins<ISimulator>()
     );
 
+    connect(_simulator, &ISimulator::blockRemoved,
+        [this](QPointF removedBlockPosition,
+           const QList<QPointF> &blockPositions,
+           const QPointF &playerPosition) {
+              _undoStack->push(
+                 new BlokRemovalCommand(
+                              _simulator,
+                              ui->graphicsView,
+                              removedBlockPosition,
+                              blockPositions,
+                              playerPosition
+                 )
+              );
+        }
+    );
+
     connect(this, &MainWindow::bodyClicked,
             _simulator, &ISimulator::removeBody);
     connect(_simulator, &ISimulator::blockRemoved,
@@ -102,6 +123,7 @@ bool MainWindow::initialize()
             ICore::instance()->uiController(), &IUIController::init);
 
     connect(_initialState, SIGNAL(entered()), this, SLOT(bannerEnter()));
+    connect(_initialState, &QState::entered, _undoStack, &QUndoStack::clear);
     connect(_initialState, SIGNAL(exited()), this, SLOT(bannerLeave()));
     _initialState->addTransition(this, SIGNAL(keyPressed()), _runningState);
 
